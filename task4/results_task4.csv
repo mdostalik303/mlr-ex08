@@ -1,0 +1,18 @@
+variant,runs,change,epochs,trainable_parameters,minutes_per_run,val,val_std,camera,camera_std,others,others_std
+baseline,3,the Task 3 pipeline itself,15,208292,0.43,0.6989,0.0336,0.6022,0.0466,0.3833,0.0507
++augmentation,3,geometric augmentation (Task 3d),15,208292,0.52,0.6774,0.0427,0.629,0.0161,0.425,0.03
++colour jitter,3,ColorJitter added to the augmentation,15,208292,0.61,0.6398,0.0372,0.6667,0.0246,0.4222,0.0631
++batchnorm,3,BatchNorm after every conv (Task 3d),15,208644,0.49,0.7312,0.0246,0.6022,0.0336,0.4028,0.0192
++dropout 0.3,3,dropout 0.3 after the first linear layer,15,208292,0.45,0.6774,0.0161,0.5914,0.0493,0.3944,0.0337
++global avg pool,3,global average pooling instead of flatten,15,64932,0.43,0.6344,0.0727,0.4624,0.0336,0.3861,0.0255
++adamw wd 1e-4,3,AdamW with weight decay 1e-4,15,208292,0.45,0.7043,0.0336,0.5753,0.0566,0.3806,0.0293
++label smoothing,3,CrossEntropyLoss(label_smoothing=0.1),15,208292,0.46,0.6828,0.0406,0.5591,0.0246,0.3806,0.0603
++best epoch,3,keep the weights of the best validation epoch,15,208292,0.48,0.7312,0.0406,0.629,0.0,0.4194,0.0315
++cosine 30 ep,3,cosine LR over 30 epochs,30,208292,0.84,0.7258,0.0427,0.6237,0.0246,0.3833,0.0167
+mobilenet frozen,3,"pretrained MobileNetV3, only the new last layer trained",15,594948,0.29,0.8548,0.0279,0.7097,0.0279,0.4583,0.0289
+mobilenet tuned,3,"pretrained MobileNetV3, whole network fine-tuned",15,1521956,1.06,0.7688,0.0493,0.6882,0.0246,0.5278,0.0459
+mobilenet full,3,pretrained + augmentation + colour + cosine + 30 epochs,30,1521956,3.0,0.8387,0.0161,0.8817,0.0336,0.6056,0.0048
+cnn best,3,bn + gap + dropout + augmentation + colour + adamw + smoothing + cosine 30 ep + best epoch,30,65284,1.67,0.6989,0.0246,0.6129,0.0,0.4611,0.0822
+phone best,3,bn + augmentation + colour + cosine 30 ep + best epoch,30,208644,1.74,0.7527,0.0336,0.7258,0.0427,0.4944,0.0529
+cnn best +hist,3,"the row above, last year's photos added to training",30,65284,11.31,0.7097,0.0279,0.6505,0.0493,0.7444,0.0822
+mobilenet +hist,3,"pretrained full, last year's photos added to training",30,1521956,7.99,0.8925,0.0336,0.8441,0.0186,0.8944,0.0192

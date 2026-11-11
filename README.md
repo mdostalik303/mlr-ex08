@@ -19,6 +19,8 @@ metadata and the two `check_*` files.
 | `model_info.json` | `classes`, `input_size`, `mean`, `std` — read by the page at startup, nothing is hardcoded |
 | `check_image.jpg`, `check_expected.json` | the notebook's reference image and its probabilities |
 | `make_qr.py` | build-time script that draws the QR code into `index.html` and reads it back |
+| `leaf_model_task4.onnx` | the improved Task 4 network, same input, output and metadata |
+| `task4/` | the Task 4 comparison: scripts, all 51 runs and the summary tables |
 
 ## How the frame becomes a tensor
 
@@ -75,6 +77,47 @@ streams handed to `getUserMedia`:
   `check_image.jpg` first upscaled 5× to 480×480 lands at apple 45.5 % / cherry 54.5 %
   instead of 98.3 % / 1.7 %. That is the network's sensitivity to a blurry, enlarged leaf,
   not a difference between the two code paths — a sharp close-up is what it was trained on.
+
+## Task 4 — making the model fit a phone camera
+
+The Task 2 network was trained on close-ups that fill the frame. A hand-held leaf does not,
+so Task 4 changes one thing at a time, three seeds each, and measures three ways. Everything
+is in `task4/`: `train.py` (17 variants), `camera_val.py` (the camera-like set) and
+`export.py`. To reproduce it, put the course `data/` and `data_history/` folders next to
+`task4/`; the trained weights are not committed (79 MB of checkpoints).
+
+- **val** — the course validation set, 62 images;
+- **camera-like** — the same 62 images passed once, with a fixed seed, through a random crop,
+  a rotation up to 25° and a colour shift (`camera_val.py`), because that is what a hand-held
+  frame looks like;
+- **other phones** — last year's students' validation photos, 120 images, never trained on.
+
+The result, from `task4/results_task4.md`:
+
+| variant | val | camera-like | other phones |
+| --- | --- | --- | --- |
+| baseline (Task 3, my CNN) | 69.9 ± 3.4 | 60.2 ± 4.7 | 38.3 ± 5.1 |
+| + colour jitter | 64.0 ± 3.7 | 66.7 ± 2.5 | 42.2 ± 6.3 |
+| + global average pooling | 63.4 ± 7.3 | 46.2 ± 3.4 | 38.6 ± 2.5 |
+| pretrained, head only | 85.5 ± 2.8 | 71.0 ± 2.8 | 45.8 ± 2.9 |
+| **pretrained + augmentation + colour + cosine, 30 epochs** | **83.9 ± 1.6** | **88.2 ± 3.4** | **60.6 ± 0.5** |
+| that, plus last year's photos | 89.2 ± 3.4 | 84.4 ± 1.9 | 89.4 ± 1.9 * |
+
+\* trained on those photos, so they are no longer unseen for that row.
+
+What it says: transfer learning matters far more than any architectural trick (a frozen
+MobileNetV3-Small beats every network trained from scratch, and it is also the cheapest row);
+augmentation aimed at the camera is what moves the target metric; and global average pooling
+actively hurts this small 4-class network. Seed-to-seed spread is ±3–5 points on 62 images, so
+dropout, AdamW with weight decay and label smoothing are inside the noise and are not claimed
+as improvements.
+
+`leaf_model_task4.onnx` is that winner exported exactly as in 2e — `image` → `logits`,
+`1×3×96×96` float32, `model_info` in the file's metadata. Measured with onnxruntime: same class
+on **62/62** validation images as in PyTorch, biggest logit difference **2.9·10⁻⁵**, camera-like
+**57/62 = 91.9 %** (seed 0, the best of its three seeds — the honest expectation is the mean,
+88.2 %). The page above still runs the original `leaf_model.onnx`, so its numbers against
+`check_expected.json` stay valid; swapping the file in is a one-line change.
 
 ## Serving it yourself
 
